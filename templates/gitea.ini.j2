@@ -113,6 +113,12 @@ AUTO_WATCH_NEW_REPOS              = {{ gitea_auto_watch_new_repos | ternary('tru
 {{ gitea_service_extra_config }}
 ;
 ;
+;https://docs.gitea.io/en-us/config-cheat-sheet/#webhook-webhook
+[webhook]
+ALLOWED_HOST_LIST = {{ gitea_webhook_allowed_host_list }}
+{{ gitea_webhook_extra_config }}
+;
+;
 ; -> https://docs.gitea.io/en-us/config-cheat-sheet/#mailer-mailer
 [mailer]
 ENABLED            = {{ gitea_mailer_enabled | ternary('true', 'false') }}
