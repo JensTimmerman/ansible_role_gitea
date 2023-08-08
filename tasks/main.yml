@@ -1,5 +1,5 @@
 ---
-- name: perform optional versionscheck
+- name: Perform optional versionscheck
   ansible.builtin.include_tasks: versioncheck.yml
   when: submodules_versioncheck|bool
 
@@ -7,50 +7,59 @@
   ansible.builtin.package_facts:
     manager: auto
 
+- name: Prepare gitea/forgejo variable import
+  block:
+    - name: Gather variables for gitea or forgejo
+      ansible.builtin.include_vars: "{{ lookup('first_found', gitea_fork_variables) }}"
+  rescue:
+    - name: Gitea/Forejo import info
+      ansible.builtin.fail:
+        msg: "Currently only {{ gitea_supported_forks }} are supported."
+
 - name: Gather variables for each operating system
   ansible.builtin.include_vars: "{{ lookup('first_found', gitea_variables) }}"
 
 - name: Gather versioning information
-  ansible.builtin.include_tasks: set_version.yml
+  ansible.builtin.include_tasks: "set_{{ gitea_fork | lower }}_version.yml"
 
-- name: backup gitea before update
+- name: Backup gitea before update
   ansible.builtin.include_tasks: backup.yml
   when: gitea_backup_on_upgrade|bool
 
-- name: create gitea user and role
+- name: Create gitea user and role
   ansible.builtin.include_tasks: create_user.yml
 
-- name: install or update gitea
-  ansible.builtin.include_tasks: install.yml
+- name: "Install or update {{ gitea_fork }}"
+  ansible.builtin.include_tasks: "install_{{ gitea_fork | lower }}.yml"
 
-- name: Create directorys
+- name: Create directories
   ansible.builtin.include_tasks: directory.yml
 
-- name: setup gitea systemd service
+- name: Setup gitea systemd service
   ansible.builtin.include_tasks: install_systemd.yml
   when: ansible_service_mgr == "systemd"
 
-- name: generate JWT Secrets if undefined
+- name: Generate JWT Secrets if undefined
   ansible.builtin.include_tasks: jwt_secrets.yml
 
-- name: generate gitea secrets if undefined
+- name: Generate gitea secrets if undefined
   ansible.builtin.include_tasks: gitea_secrets.yml
 
-- name: configure gitea
+- name: Configure gitea
   ansible.builtin.include_tasks: configure.yml
 
-- name: deploy optional fail2ban rules
+- name: Deploy optional fail2ban rules
   ansible.builtin.include_tasks: fail2ban.yml
   when: gitea_fail2ban_enabled|bool
 
-- name: optionally customize gitea
+- name: Optionally customize gitea
   ansible.builtin.include_tasks: customize_logo.yml
   when: gitea_customize_logo|bool
 
-- name: optionally customize footer
+- name: Optionally customize footer
   ansible.builtin.include_tasks: customize_footer.yml
   when: gitea_customize_footer|bool
 
-- name: optionally deploy public files
+- name: Optionally deploy public files
   ansible.builtin.include_tasks: customize_public_files.yml
   when: gitea_customize_files|bool
